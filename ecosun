@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ecosun - Smart Solar Panels</title>
+<meta name="description" content="Ecosun: Interactive dashboard to track solar energy production, usage, CO₂ savings, and weather alerts.">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body { font-family: Arial, sans-serif; margin:0; overflow-x:hidden; transition: background 0.5s, color 0.5s; }
+header { display:flex; justify-content:space-between; align-items:center; padding:15px 30px; background:linear-gradient(to right, #4caf50, #81c784); color:white; position:sticky; top:0; z-index:500; border-bottom:4px solid #388e3c;}
+nav { display:flex; gap:10px; flex-wrap:wrap;}
+nav button { padding:10px 18px; border:none; border-radius:8px; background:#ff9800; color:white; font-weight:bold; cursor:pointer; transition:0.3s;}
+nav button:hover { transform:scale(1.1); background:#fb8c00;}
+section { padding:20px; margin:20px; background:rgba(255,255,255,0.9); border-radius:15px; display:none; box-shadow:0 4px 15px rgba(0,0,0,0.2);}
+#settings { display:flex; flex-direction:column; max-width:300px;}
+.notification-toggle, .theme-button { margin:10px 0; cursor:pointer; border-radius:6px; padding:10px; font-weight:bold; border:none;}
+.notification-toggle { background:#ff5722; color:white;}
+.notification-toggle:hover { transform:scale(1.05); background:#e64a19;}
+.theme-button { background:#4caf50; color:white;}
+.theme-button:hover { transform:scale(1.05);}
+
+#welcome-screen { position:fixed; top:0; left:0; width:100%; height:100%; background:linear-gradient(to bottom, #a8e6cf, #dcedc1); display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:1000; text-align:center;}
+#welcome-screen h1 { font-size:48px; color:#2e7d32; margin-bottom:20px; animation:fadeIn 2s ease-in-out;}
+#welcome-screen button { padding:15px 30px; font-size:18px; border:none; border-radius:10px; background-color:#4caf50; color:white; cursor:pointer; transition:transform 0.3s;}
+#welcome-screen button:hover { transform:scale(1.1); background-color:#388e3c;}
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+.plants-background { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0;}
+.plant { position:absolute; width:80px; height:80px; background-size:contain; background-repeat:no-repeat; animation: floatPlant 5s ease-in-out infinite alternate;}
+.greenEco .plant { background-image: url('https://i.ibb.co/7yqzSDh/plant-green.png'); }
+.blueFlowers .plant { background-image: url('https://i.ibb.co/Yc2wM9y/flower-blue.png'); }
+.sunEnergy .plant { background-image: url('https://i.ibb.co/6YzqjgQ/plant-sun.png'); }
+@keyframes floatPlant { 0% { transform:translateY(0px); } 100% { transform:translateY(-15px); } }
+
+.section-image { width:100px; height:100px; background-size:contain; background-repeat:no-repeat; margin-bottom:15px; }
+</style>
+</head>
+<body class="greenEco">
+
+<div id="welcome-screen">
+  <h1>Welcome! Eco-friendly Smart Solar System</h1>
+  <button onclick="enterSite()">Enter</button>
+</div>
+
+<header>
+  <nav>
+    <button onclick="showSection('energy-produced')">Energy Produced</button>
+    <button onclick="showSection('energy-used')">Energy Used</button>
+    <button onclick="showSection('forecast')">Forecast</button>
+    <button onclick="showSection('co2')">CO₂ Saved</button>
+    <button onclick="showSection('usage-history')">Usage History</button>
+  </nav>
+  <button onclick="showSection('settings')">⚙️</button>
+</header>
+
+<div class="plants-background">
+  <div class="plant" style="top:80%; left:10%;"></div>
+  <div class="plant" style="top:70%; left:50%;"></div>
+  <div class="plant" style="top:75%; left:80%;"></div>
+</div>
+
+<section id="energy-produced">
+  <div class="section-image" style="background-image:url('https://i.ibb.co/9w1qzj7/energy-produced-icon.png');"></div>
+  <h2>Energy Produced</h2>
+  <p>Total Energy Produced Today: <span id="produced-value">12 kWh</span></p>
+  <canvas id="producedChart"></canvas>
+</section>
+
+<section id="energy-used">
+  <div class="section-image" style="background-image:url('https://i.ibb.co/Pr0J2q9/energy-used-icon.png');"></div>
+  <h2>Energy Used</h2>
+  <p>Total Energy Used Today: <span id="used-value">8 kWh</span></p>
+  <canvas id="usedChart"></canvas>
+</section>
+
+<section id="forecast">
+  <div class="section-image" style="background-image:url('https://i.ibb.co/YT4ZrFp/forecast-icon.png');"></div>
+  <h2>Energy Forecast & Weather</h2>
+  <canvas id="forecastChart"></canvas>
+  <p id="weather-alert"></p>
+</section>
+
+<section id="co2">
+  <div class="section-image" style="background-image:url('https://i.ibb.co/HGmDhR4/co2-icon.png');"></div>
+  <h2>CO₂ Emissions Saved</h2>
+  <p>Total CO₂ saved today: <span id="co2-saved">5 kg</span></p>
+</section>
+
+<section id="usage-history">
+  <div class="section-image" style="background-image:url('https://i.ibb.co/J5sM3vV/history-icon.png');"></div>
+  <h2>Energy Usage History</h2>
+  <canvas id="historyChart"></canvas>
+</section>
+
+<section id="settings">
+  <h2>Settings</h2>
+  <input type="text" placeholder="Your Name" id="user-name" />
+  <input type="email" placeholder="Your Email" id="user-email" />
+  <input type="tel" placeholder="Your Phone Number" id="user-phone" />
+  <button class="notification-toggle" onclick="toggleNotifications()">Enable Notifications</button>
+  <h3>Change Theme:</h3>
+  <button class="theme-button" onclick="setTheme('greenEco')">Green Eco</button>
+  <button class="theme-button" onclick="setTheme('blueFlowers')">Blue Flowers</button>
+  <button class="theme-button" onclick="setTheme('sunEnergy')">Sun Energy</button>
+</section>
+
+<script>
+function enterSite() { document.getElementById('welcome-screen').style.display='none'; showSection('energy-produced'); }
+function showSection(id){ document.querySelectorAll('section').forEach(s=>s.style.display='none'); document.getElementById(id).style.display='block'; }
+
+let notificationsEnabled=false;
+function toggleNotifications(){ notificationsEnabled=!notificationsEnabled; const btn=document.querySelector('.notification-toggle'); btn.textContent=notificationsEnabled?'Disable Notifications':'Enable Notifications'; alert('Notifications '+(notificationsEnabled?'Enabled':'Disabled')); }
+
+function setTheme(theme){ document.body.className=theme;
+ if(theme==='greenEco') document.body.style.background='linear-gradient(to bottom, #a8e6cf, #dcedc1)';
+ else if(theme==='blueFlowers') document.body.style.background='linear-gradient(to bottom, #bbdefb, #90caf9)';
+ else if(theme==='sunEnergy') document.body.style.background='linear-gradient(to bottom, #fff3e0, #ffe0b2)';
+}
+
+function weatherAlert(){ const alertText=document.getElementById('weather-alert'); const isSunny=Math.random()>0.3; alertText.textContent=isSunny?'Sunny day! Use solar panels to store maximum energy.':'Cloudy or rainy day. Reduce usage to save energy.';}
+weatherAlert();
+
+const producedChart = new Chart(document.getElementById('producedChart').getContext('2d'), { type:'bar', data:{ labels:['6AM','9AM','12PM','3PM','6PM','9PM'], datasets:[{label:'Energy Produced (kWh)', data:[1,3,5,2,0.5,0], backgroundColor:'#4caf50'}]}, options:{responsive:true} });
+const usedChart = new Chart(document.getElementById('usedChart').getContext('2d'), { type:'line', data:{ labels:['6AM','9AM','12PM','3PM','6PM','9PM'], datasets:[{ label:'Energy Used (kWh)', data:[0.5,1,2,3,1,0.5], borderColor:'#ff9800', backgroundColor:'rgba(255,152,0,0.2)', fill:true, tension:0.3 }]}, options:{responsive:true} });
+const forecastChart = new Chart(document.getElementById('forecastChart').getContext('2d'), { type:'line', data:{ labels:['6AM','9AM','12PM','3PM','6PM','9PM'], datasets:[{ label:'Forecast Energy (kWh)', data:[1,2.5,4,2,1,0.2], borderColor:'#2196f3', backgroundColor:'rgba(33,150,243,0.2)', fill:true, tension:0.3 }]}, options:{responsive:true} });
+const historyChart = new Chart(document.getElementById('historyChart').getContext('2d'), { type:'bar', data:{ labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets:[{ label:'Daily Energy Used (kWh)', data:[8,7,9,6,8,7,5], backgroundColor:'#ff9800' },{ label:'Daily Energy Produced (kWh)', data:[12,11,13,10,12,11,9], backgroundColor:'#4caf50' }]}, options:{responsive:true,scales:{ y:{ beginAtZero:true } } } });
+</script>
+
+</body>
+</html>
